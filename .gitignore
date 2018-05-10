@@ -11,3 +11,5 @@ data/downstream/SST/
 data/downstream/STS/
 data/downstream/SUBJ/
 data/downstream/TREC/
+**/*.pyc
+**/__pycache__
