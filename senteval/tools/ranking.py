@@ -94,7 +94,9 @@ class PairwiseRankingLoss(nn.Module):
 
 class ImageSentenceRankingPytorch(object):
     # Image Sentence Ranking on COCO with Pytorch
-    def __init__(self, train, valid, test, config):
+    def __init__(self, train, valid, test, config, cuda=True):
+        self.cuda = cuda
+
         # fix seed
         self.seed = config['seed']
         np.random.seed(self.seed)
@@ -117,20 +119,27 @@ class ImageSentenceRankingPytorch(object):
 
         config_model = {'imgdim': self.imgdim,'sentdim': self.sentdim,
                         'projdim': self.projdim}
-        self.model = COCOProjNet(config_model).cuda()
+        self.model = COCOProjNet(config_model)
 
-        self.loss_fn = PairwiseRankingLoss(margin=self.margin).cuda()
+        self.loss_fn = PairwiseRankingLoss(margin=self.margin)
 
         self.optimizer = optim.Adam(self.model.parameters())
+
+        if self.cuda:
+            self.model = self.model.cuda()
+            self.loss_fn = self.loss_fn.cuda()
 
     def prepare_data(self, trainTxt, trainImg, devTxt, devImg,
                      testTxt, testImg):
         trainTxt = torch.FloatTensor(trainTxt)
         trainImg = torch.FloatTensor(trainImg)
-        devTxt = torch.FloatTensor(devTxt).cuda()
-        devImg = torch.FloatTensor(devImg).cuda()
-        testTxt = torch.FloatTensor(testTxt).cuda()
-        testImg = torch.FloatTensor(testImg).cuda()
+        devTxt = torch.FloatTensor(devTxt)
+        devImg = torch.FloatTensor(devImg)
+        testTxt = torch.FloatTensor(testTxt)
+        testImg = torch.FloatTensor(testImg)
+
+        if self.cuda:
+            devTxt, devImg, testTxt, testImg = [t.cuda() for t in [devTxt, devImg, testTxt, testImg]]
 
         return trainTxt, trainImg, devTxt, devImg, testTxt, testImg
 
@@ -242,8 +251,10 @@ class ImageSentenceRankingPytorch(object):
                     logging.info("Text to Image: {0}, {1}, {2}, {3}".format(
                         r1_t2i, r5_t2i, r10_t2i, medr_t2i))
                 idx = torch.LongTensor(permutation[i:i + self.batch_size])
-                imgbatch = Variable(trainImg.index_select(0, idx)).cuda()
-                sentbatch = Variable(trainTxt.index_select(0, idx)).cuda()
+                imgbatch = Variable(trainImg.index_select(0, idx))
+                sentbatch = Variable(trainTxt.index_select(0, idx))
+                if self.cuda:
+                    imgbatch, sentbatch = imgbatch.cuda(), sentbatch.cuda()
 
                 idximgc = np.random.choice(permutation[:i] +
                                            permutation[i + self.batch_size:],
@@ -255,9 +266,11 @@ class ImageSentenceRankingPytorch(object):
                 idxsentc = torch.LongTensor(idxsentc)
                 # Get indexes for contrastive images and sentences
                 imgcbatch = Variable(trainImg.index_select(0, idximgc)).view(
-                    -1, self.ncontrast, self.imgdim).cuda()
+                    -1, self.ncontrast, self.imgdim)
                 sentcbatch = Variable(trainTxt.index_select(0, idxsentc)).view(
-                    -1, self.ncontrast, self.sentdim).cuda()
+                    -1, self.ncontrast, self.sentdim)
+                if self.cuda:
+                    imgcbatch, sentcbatch = imgcbatch.cuda(), sentcbatch.cuda()
 
                 anchor1, anchor2, img_sentc, sent_imgc = self.model(
                     imgbatch, sentbatch, imgcbatch, sentcbatch)
@@ -287,7 +300,10 @@ class ImageSentenceRankingPytorch(object):
         sent_embed = torch.cat(sent_embed, 0).data
 
         npts = int(img_embed.size(0) / 5)
-        idxs = torch.cuda.LongTensor(range(0, len(img_embed), 5))
+        if self.cuda:
+            idxs = torch.cuda.LongTensor(range(0, len(img_embed), 5))
+        else:
+            idxs = torch.LongTensor(range(0, len(img_embed), 5))
         ims = img_embed.index_select(0, idxs)
 
         ranks = np.zeros(5 * npts)

@@ -86,7 +86,8 @@ class ImageCaptionRetrievalEval(object):
         clf = ImageSentenceRankingPytorch(train=coco_embed['train'],
                                           valid=coco_embed['dev'],
                                           test=coco_embed['test'],
-                                          config=config)
+                                          config=config,
+                                          cuda=params.get('cuda'))
 
         bestdevscore, r1_i2t, r5_i2t, r10_i2t, medr_i2t, \
             r1_t2i, r5_t2i, r10_t2i, medr_t2i = clf.run()
