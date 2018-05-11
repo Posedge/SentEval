@@ -123,11 +123,11 @@ class ImageSentenceRankingPytorch(object):
 
         self.loss_fn = PairwiseRankingLoss(margin=self.margin)
 
-        self.optimizer = optim.Adam(self.model.parameters())
-
         if self.cuda:
             self.model = self.model.cuda()
             self.loss_fn = self.loss_fn.cuda()
+
+        self.optimizer = optim.Adam(self.model.parameters())
 
     def prepare_data(self, trainTxt, trainImg, devTxt, devImg,
                      testTxt, testImg):
