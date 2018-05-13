@@ -82,7 +82,8 @@ class ImageCaptionRetrievalEval(object):
             coco_embed[key]['imgfeat'] = np.array(self.coco_data[key]['imgfeat'])
             logging.info('Computed {0} embeddings'.format(key))
 
-        config = {'seed': self.seed, 'projdim': 1000, 'margin': 0.2}
+        params.get('model_close_fn', lambda: None)()
+        config = {'seed': self.seed, 'projdim': params.get('COCO_projdim', 1000), 'margin': 0.2}
         clf = ImageSentenceRankingPytorch(train=coco_embed['train'],
                                           valid=coco_embed['dev'],
                                           test=coco_embed['test'],
