@@ -99,6 +99,8 @@ class SICKRelatednessEval(object):
         testF = np.c_[np.abs(testA - testB), testA * testB]
         testY = self.encode_labels(self.sick_data['test']['y'])
 
+        if 'model_close_fn' in params:
+            params['model_close_fn']()
         config = {'seed': self.seed, 'nclasses': 5}
         clf = RelatednessPytorch(train={'X': trainF, 'y': trainY},
                                  valid={'X': devF, 'y': devY},
@@ -116,7 +118,7 @@ class SICKRelatednessEval(object):
                        for SICK Relatedness\n'.format(pr, sr, se))
 
         return {'devpearson': devpr, 'pearson': pr, 'spearman': sr, 'mse': se,
-                'yhat': yhat, 'ndev': len(devA), 'ntest': len(testA)}
+                'yhat': yhat.tolist(), 'ndev': len(devA), 'ntest': len(testA)}
 
     def encode_labels(self, labels, nclass=5):
         """

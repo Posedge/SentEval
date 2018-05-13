@@ -12,6 +12,7 @@ from __future__ import absolute_import, division, unicode_literals
 
 import copy
 import numpy as np
+import logging
 
 import torch
 from torch import nn
@@ -86,8 +87,10 @@ class RelatednessPytorch(object):
             self.trainepoch(trainX, trainy, nepoches=50)
             yhat = np.dot(self.predict_proba(devX), r)
             pr = pearsonr(yhat, self.devscores)[0]
+            logging.debug('pearson r: %f' % pr)
             # early stop on Pearson
             if pr > bestpr:
+                logging.debug('new best model')
                 bestpr = pr
                 bestmodel = copy.deepcopy(self.model)
             elif self.early_stop:
@@ -101,6 +104,7 @@ class RelatednessPytorch(object):
         return bestpr, yhat
 
     def trainepoch(self, X, y, nepoches=1):
+        logging.debug('training for %d epochs' % nepoches)
         self.model.train()
         for _ in range(self.nepoch, self.nepoch + nepoches):
             permutation = np.random.permutation(len(X))
